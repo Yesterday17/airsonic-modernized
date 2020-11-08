@@ -57,9 +57,9 @@
     </pluginRepositories>
 
     <scm>
-        <connection>scm:git:git://github.com/airsonic-advanced/airsonic-advanced.git</connection>
-        <developerConnection>scm:git:git@github.com:airsonic-advanced/airsonic-advanced.git</developerConnection>
-        <url>https://github.com/airsonic-advanced/airsonic-advanced.git</url>
+        <connection>scm:git:git://github.com/Yesterday17/airsonic-modernized.git</connection>
+        <developerConnection>scm:git:git@github.com:Yesterday17/airsonic-modernized.git</developerConnection>
+        <url>https://github.com/Yesterday17/airsonic-modernized.git</url>
     </scm>
 
     <modules>

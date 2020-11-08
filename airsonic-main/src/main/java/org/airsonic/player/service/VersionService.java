@@ -205,7 +205,7 @@ public class VersionService {
         }
     }
 
-    private static final String VERSION_URL = "https://api.github.com/repos/airsonic-advanced/airsonic-advanced/releases";
+    private static final String VERSION_URL = "https://api.github.com/repos/Yesterday17/airsonic-modernized/releases";
 
     private static ResponseHandler<List<Map<String, Object>>> respHandler = new AbstractResponseHandler<List<Map<String,Object>>>() {
         @Override
