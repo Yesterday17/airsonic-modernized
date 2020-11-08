@@ -33,6 +33,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.subsonic.restapi.ScanStatus;
 
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 
 import java.io.IOException;
@@ -184,20 +185,46 @@ public class MediaScannerService {
      * The scanning is done asynchronously, i.e., this method returns immediately.
      */
     public synchronized void scanLibrary() {
+        scanLibrary(null, true);
+    }
+
+    public synchronized void scanLibrary(@Nullable String folder, @Nullable Boolean podcast) {
         if (isScanning()) {
             return;
         }
         setScanning(true);
 
+        Path item = null;
+        List<MusicFolder> folders = settingsService.getAllMusicFolders();
+        if (folder != null) {
+            item = Path.of(folder);
+            // folder must be subfolder of an existing music folder
+            Path finalItem = item;
+            Optional<MusicFolder> pf = folders.stream().filter(musicFolder -> finalItem.startsWith(musicFolder.getPath())).findFirst();
+            if (pf.isPresent()) {
+                folders = new LinkedList<>();
+                folders.add(pf.get());
+            } else {
+                item = null;
+            }
+        }
+
+        // if podcast != null, use podcast
+        // else if folder == null && podcast == null, scan podcast
+        // else folder != null && podcast == null, do not scan podcast
+        boolean scanPodcast = Objects.requireNonNullElseGet(podcast, () -> folder == null);
+
         ForkJoinPool pool = new ForkJoinPool(scannerParallelism, mediaScannerThreadFactory, null, true);
 
-        CompletableFuture.runAsync(() -> doScanLibrary(pool), pool)
+        List<MusicFolder> finalFolders = folders;
+        Path finalItem = item;
+        CompletableFuture.runAsync(() -> doScanLibrary(pool, finalFolders, finalItem, scanPodcast), pool)
                 .thenRunAsync(() -> playlistService.importPlaylists(), pool)
-                .whenComplete((r,e) -> pool.shutdown())
-                .whenComplete((r,e) -> setScanning(false));
+                .whenComplete((r, e) -> pool.shutdown())
+                .whenComplete((r, e) -> setScanning(false));
     }
 
-    private void doScanLibrary(ForkJoinPool pool) {
+    private void doScanLibrary(ForkJoinPool pool, List<MusicFolder> folders, @Nullable Path item, boolean podcast) {
         LOG.info("Starting to scan media library.");
         MediaLibraryStatistics statistics = new MediaLibraryStatistics();
         LOG.debug("New last scan date is {}", statistics.getScanDate());
@@ -216,16 +243,23 @@ public class MediaScannerService {
             mediaFileService.setMemoryCacheEnabled(false);
             indexManager.startIndexing();
 
-            // Recurse through all files on disk.
-            settingsService.getAllMusicFolders()
-                .parallelStream()
-                .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(musicFolder.getPath(), false), musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, false));
+            if (item == null) {
+                // Recurse through all files on disk.
+                folders.parallelStream()
+                        .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(musicFolder.getPath(), false), musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, false));
+            } else {
+                // Recurse specified path on disk
+                // assert folders.length == 1 &&
+                scanFile(mediaFileService.getMediaFile(item, false), folders.get(0), statistics, albumCount, artists, albums, albumsInDb, genres, encountered, false);
+            }
 
-            // Scan podcast folder.
-            Path podcastFolder = Paths.get(settingsService.getPodcastFolder());
-            if (Files.exists(podcastFolder)) {
-                scanFile(mediaFileService.getMediaFile(podcastFolder), new MusicFolder(podcastFolder, null, true, null),
-                        statistics, albumCount, artists, albums, albumsInDb, genres, encountered, true);
+            if (podcast) {
+                // Scan podcast folder.
+                Path podcastFolder = Paths.get(settingsService.getPodcastFolder());
+                if (Files.exists(podcastFolder)) {
+                    scanFile(mediaFileService.getMediaFile(podcastFolder), new MusicFolder(podcastFolder, null, true, null),
+                            statistics, albumCount, artists, albums, albumsInDb, genres, encountered, true);
+                }
             }
 
             LOG.info("Scanned media library with {} entries.", scanCount.get());
@@ -312,8 +346,8 @@ public class MediaScannerService {
 
         if (file.isDirectory()) {
             mediaFileService.getChildrenOf(file, true, true, false, false)
-                .parallelStream()
-                .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, isPodcast));
+                    .parallelStream()
+                    .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, isPodcast));
         } else {
             if (!isPodcast) {
                 updateAlbum(file, musicFolder, statistics.getScanDate(), albumCount, albums, albumsInDb);
@@ -352,7 +386,7 @@ public class MediaScannerService {
         }
 
         final AtomicBoolean firstEncounter = new AtomicBoolean(false);
-        Album album = albums.compute(file.getAlbumName() + "|" + artist, (k,v) -> {
+        Album album = albums.compute(file.getAlbumName() + "|" + artist, (k, v) -> {
             Album a = v;
 
             if (a == null) {
@@ -424,7 +458,7 @@ public class MediaScannerService {
 
         final AtomicBoolean firstEncounter = new AtomicBoolean(false);
 
-        Artist artist = artists.compute(file.getAlbumArtist(), (k,v) -> {
+        Artist artist = artists.compute(file.getAlbumArtist(), (k, v) -> {
             Artist a = v;
 
             if (a == null) {

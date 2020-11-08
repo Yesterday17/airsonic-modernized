@@ -1150,7 +1150,7 @@ public class SubsonicRESTController {
             albums = albumDao.getAlbumsByGenre(offset, size, getRequiredStringParameter(request, "genre"), musicFolders);
         } else if ("byYear".equals(type)) {
             albums = albumDao.getAlbumsByYear(offset, size, getRequiredIntParameter(request, "fromYear"),
-                                              getRequiredIntParameter(request, "toYear"), musicFolders);
+                    getRequiredIntParameter(request, "toYear"), musicFolders);
         } else if ("starred".equals(type)) {
             albums = albumDao.getStarredAlbums(offset, size, securityService.getCurrentUser(request).getUsername(), musicFolders);
         } else if ("random".equals(type)) {
@@ -1217,15 +1217,15 @@ public class SubsonicRESTController {
 
         Stream.concat(statusService.getActivePlays().parallelStream(),
                 statusService.getInactivePlays().parallelStream())
-            .map(info -> info.fromPlayStatus())
-            .forEach(s -> {
-                NowPlayingEntry entry = new NowPlayingEntry();
-                entry.setUsername(s.getPlayer().getUsername());
-                entry.setPlayerId(s.getPlayer().getId());
-                entry.setPlayerName(s.getPlayer().getName());
-                entry.setMinutesAgo((int) s.getMinutesAgo());
-                result.getEntry().add(createJaxbChild(entry, s.getPlayer(), s.getMediaFile(), entry.getUsername()));
-            });
+                .map(info -> info.fromPlayStatus())
+                .forEach(s -> {
+                    NowPlayingEntry entry = new NowPlayingEntry();
+                    entry.setUsername(s.getPlayer().getUsername());
+                    entry.setPlayerId(s.getPlayer().getId());
+                    entry.setPlayerName(s.getPlayer().getName());
+                    entry.setMinutesAgo((int) s.getMinutesAgo());
+                    result.getEntry().add(createJaxbChild(entry, s.getPlayer(), s.getMediaFile(), entry.getUsername()));
+                });
 
         Response res = createResponse();
         res.setNowPlaying(result);
@@ -1348,11 +1348,11 @@ public class SubsonicRESTController {
 
     @RequestMapping("/download")
     public ResponseEntity<Resource> download(Principal p,
-            @RequestParam(required = false) String id,
-            @RequestParam(required = false) Integer playlist,
-            @RequestParam(required = false) Integer player,
-            @RequestParam(required = false, name = "i") List<Integer> indices,
-            ServletWebRequest swr) throws Exception {
+                                             @RequestParam(required = false) String id,
+                                             @RequestParam(required = false) Integer playlist,
+                                             @RequestParam(required = false) Integer player,
+                                             @RequestParam(required = false, name = "i") List<Integer> indices,
+                                             ServletWebRequest swr) throws Exception {
         HttpServletRequest request = wrapRequest(swr.getRequest());
         final Integer playerId = Optional.ofNullable(request.getParameter("player")).map(Integer::valueOf).orElse(null);
         Optional<Integer> idInt = Optional.ofNullable(id).map(this::mapId).filter(StringUtils::isNumeric).map(Integer::valueOf);
@@ -1399,15 +1399,15 @@ public class SubsonicRESTController {
 
     @RequestMapping("/stream")
     public ResponseEntity<Resource> stream(Authentication authentication,
-            @RequestParam(required = false) Integer playlist,
-            @RequestParam(required = false) String format,
-            @RequestParam(required = false) String suffix,
-            @RequestParam Optional<Integer> maxBitRate,
-            @RequestParam Optional<Integer> id,
-            @RequestParam Optional<String> path,
-            @RequestParam(defaultValue = "false") boolean hls,
-            @RequestParam(required = false) Double offsetSeconds,
-            ServletWebRequest swr) throws Exception {
+                                           @RequestParam(required = false) Integer playlist,
+                                           @RequestParam(required = false) String format,
+                                           @RequestParam(required = false) String suffix,
+                                           @RequestParam Optional<Integer> maxBitRate,
+                                           @RequestParam Optional<Integer> id,
+                                           @RequestParam Optional<String> path,
+                                           @RequestParam(defaultValue = "false") boolean hls,
+                                           @RequestParam(required = false) Double offsetSeconds,
+                                           ServletWebRequest swr) throws Exception {
         HttpServletRequest request = wrapRequest(swr.getRequest());
         User user = securityService.getUserByName(authentication.getName());
         if (!user.isStreamRole()) {
@@ -2296,9 +2296,11 @@ public class SubsonicRESTController {
     }
 
     @RequestMapping("/startScan")
-    public void startScan(HttpServletRequest request, HttpServletResponse response) {
+    public void startScan(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
-        mediaScannerService.scanLibrary();
+        String folder = ServletRequestUtils.getStringParameter(request, "folder");
+        Boolean podcast = ServletRequestUtils.getBooleanParameter(request, "podcast");
+        mediaScannerService.scanLibrary(folder, podcast);
         getScanStatus(request, response);
     }
 
