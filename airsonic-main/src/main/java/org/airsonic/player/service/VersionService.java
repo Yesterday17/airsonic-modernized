@@ -37,6 +37,7 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -244,6 +245,9 @@ public class VersionService {
             content = client.execute(method, respHandler);
         } catch (ConnectTimeoutException e) {
             LOG.warn("Got a timeout when trying to reach {}", VERSION_URL);
+            return;
+        } catch(UnknownHostException e) {
+            LOG.warn("Failed to resolve host for {}", VERSION_URL);
             return;
         }
 

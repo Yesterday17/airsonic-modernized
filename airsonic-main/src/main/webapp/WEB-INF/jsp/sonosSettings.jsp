@@ -22,7 +22,6 @@
 <head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/script/scripts.js'/>"></script>
 </head>
 
 <body class="mainframe bgcolor1">
@@ -126,7 +125,7 @@
     <p></p>
     <h2 <c:if test="${empty model.returnCodes}">hidden</c:if>><fmt:message key="sonossettings.returnCodes"/></h2>
     <p></p>
-    <div style="padding:5" class="log indent" <c:if test="${empty model.returnCodes}">hidden</c:if>>
+    <div style="padding:5px" class="log indent" <c:if test="${empty model.returnCodes}">hidden</c:if>>
         <c:forEach items="${model.returnCodes}" var="returnCode">
             <p><fmt:message key="${returnCode}"/></p>
         </c:forEach>

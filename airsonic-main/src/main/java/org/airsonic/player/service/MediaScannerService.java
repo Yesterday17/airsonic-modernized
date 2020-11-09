@@ -470,7 +470,7 @@ public class MediaScannerService {
                 a.setName(k);
             }
 
-            int n = Math.max(Optional.ofNullable(albumCount.get(a.getName())).map(x -> x.get()).orElse(0), Optional.ofNullable(a.getAlbumCount()).orElse(0));
+            int n = Math.max(Optional.ofNullable(albumCount.get(a.getName())).map(AtomicInteger::get).orElse(0), Optional.of(a.getAlbumCount()).orElse(0));
             a.setAlbumCount(n);
 
             firstEncounter.set(!lastScanned.equals(a.getLastScanned()));

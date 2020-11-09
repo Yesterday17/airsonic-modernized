@@ -1058,7 +1058,7 @@
 
 <div id="thumbs"></div>
 
-<table id="artistInfoTable" style="padding:2em;clear:both" class="bgcolor2 dropshadow pagetype-dependent type-album type-artist">
+<table id="artistInfoTable" style="display:none;padding:2em;clear:both" class="bgcolor2 dropshadow pagetype-dependent type-album type-artist">
     <tr class="pagetype-dependent type-artist">
         <td rowspan="5" style="vertical-align: top">
             <a id="artistImageZoom" rel="zoom" href="#">
